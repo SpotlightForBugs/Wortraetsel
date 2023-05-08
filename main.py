@@ -19,10 +19,9 @@ def erraten(dev=False):
     if len(versuch) > 1:
         print("Bitte gib nur einen Buchstaben ein!")
         return erraten()
-    elif versuch in wort and versuch not in erratene_buchstaben and versuch != "":
+    if versuch in wort and versuch not in erratene_buchstaben and versuch != "":
         return versuch
-    else:
-        return versuch
+    return versuch
 
 
 def platzhalter_aktualisieren(richtiges_wort, liste, print_out):
