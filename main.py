@@ -1,6 +1,5 @@
 import sys
-
-import requests as requests
+import requests
 
 
 def zufallswort():
