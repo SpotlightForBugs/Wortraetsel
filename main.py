@@ -1,4 +1,3 @@
-import random
 import sys
 
 import requests as requests
@@ -7,8 +6,8 @@ import requests as requests
 def zufallswort():
     wort_api = "https://random-word-api.herokuapp.com/word?lang=de"
     wort = requests.get(wort_api).json()[0]
-    if len (wort.split(" ")) > 1:
-        return zufallswort( )
+    if len(wort.split(" ")) > 1:
+        return zufallswort()
     return wort.lower()
 
 
@@ -63,4 +62,3 @@ if __name__ == "__main__":
     else:
         print(f"Du hast das Wort nicht erraten\nDas richtige Wort war {wort.capitalize()}")
         sys.exit()
-
