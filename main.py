@@ -7,7 +7,7 @@ import requests
 import sentry_sdk
 import zufallsworte as zufall
 
-globals()["version"] = "stable-05"
+globals()["version"] = "stable-06"
 
 
 def before_send(event, hint):
