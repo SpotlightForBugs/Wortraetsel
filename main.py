@@ -7,7 +7,7 @@ import requests
 import sentry_sdk
 import zufallsworte as zufall
 
-globals()["version"] = "stable-04"
+globals()["version"] = "stable-05"
 
 
 def before_send(event, hint):
@@ -50,7 +50,7 @@ def erraten(wort, erratene_buchstaben, dev=False):
             sentry_sdk.add_breadcrumb(
                 category="error", message="More than one letter entered: " + versuch
             )
-            return erraten()
+            return erraten(wort, erratene_buchstaben)
         if versuch in wort and versuch not in erratene_buchstaben and versuch != "":
             return versuch
         return versuch
