@@ -1,12 +1,11 @@
 import sys
 
-import zufallsworte as zufall
-
 import requests
+import zufallsworte as zufall
 
 
 def ersetze_umlaute(s):
-    special_char_map = {'ä': 'ae', 'ü': 'ue', 'ö': 'oe', 'ß': 'ss'}
+    special_char_map = {"ä": "ae", "ü": "ue", "ö": "oe", "ß": "ss"}
     return s.translate(str.maketrans(special_char_map))
 
 
@@ -35,8 +34,7 @@ def platzhalter_aktualisieren(richtiges_wort, liste, print_out):
             return wort_platzhalter
     else:
         aktualisiert = [
-            buchstabe if buchstabe in liste else "_"
-            for buchstabe in richtiges_wort
+            buchstabe if buchstabe in liste else "_" for buchstabe in richtiges_wort
         ]
         if print_out:
             print("".join(aktualisiert))
@@ -157,7 +155,7 @@ def hangman(num_guesses):
 
 
            -
-        """
+        """,
     ]
 
     return stages[num_guesses - 1] if num_guesses <= 12 else None
@@ -169,11 +167,11 @@ if __name__ == "__main__":
 
     erratene_buchstaben, fertig, versuche, maximale_versuche = [], False, 0, 11
     while not fertig and versuche < maximale_versuche:
-        momentaner_stand = platzhalter_aktualisieren(wort, erratene_buchstaben,
-                                                     True)
+        momentaner_stand = platzhalter_aktualisieren(
+            wort, erratene_buchstaben, True)
         erratene_buchstaben.append(erraten())
-        neuer_stand = platzhalter_aktualisieren(wort, erratene_buchstaben,
-                                                False)
+        neuer_stand = platzhalter_aktualisieren(
+            wort, erratene_buchstaben, False)
         fertig = "_" not in neuer_stand
         if not fertig:
             versuche += neuer_stand == momentaner_stand
