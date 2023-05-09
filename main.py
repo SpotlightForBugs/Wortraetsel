@@ -2,7 +2,7 @@ import os
 import tkinter as tk
 import winreg as reg
 from tkinter import simpledialog
-
+import sys
 import requests
 import sentry_sdk
 import zufallsworte as zufall
@@ -273,7 +273,7 @@ def erneut_spielen():
             )
             print("Auf Wiedersehen!")
             sentry_sdk.add_breadcrumb(category="info", message="Game ended")
-            exit()
+            sys.exit()
 
 
 def main():
