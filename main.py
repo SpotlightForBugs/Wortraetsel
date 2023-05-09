@@ -1,5 +1,4 @@
 import os
-import sys
 import tkinter as tk
 import winreg as reg
 from tkinter import simpledialog
@@ -8,7 +7,7 @@ import requests
 import sentry_sdk
 import zufallsworte as zufall
 
-globals()["version"] = "stable-03"
+globals()["version"] = "stable-04"
 
 
 def before_send(event, hint):
@@ -356,5 +355,7 @@ def update_check():
 
 
 if __name__ == "__main__":
+    print("Nach Updates suchen...")
     update_check()
+    print("Starte Hangman...")
     main()
