@@ -1,14 +1,18 @@
 import sys
 
+import zufallsworte as zufall
+
 import requests
 
 
+def ersetze_umlaute(s):
+    special_char_map = {'ä': 'ae', 'ü': 'ue', 'ö': 'oe', 'ß': 'ss'}
+    return s.translate(str.maketrans(special_char_map))
+
+
 def zufallswort():
-    wort_api = "https://random-word-api.herokuapp.com/word?lang=de"
-    wort = requests.get(wort_api).json()[0]
-    if len(wort.split(" ")) > 1:
-        return zufallswort()
-    return wort.lower()
+    z_wort = zufall.zufallswoerter(1)
+    return ersetze_umlaute(z_wort[0].lower())
 
 
 def erraten(dev=False):
@@ -39,11 +43,131 @@ def platzhalter_aktualisieren(richtiges_wort, liste, print_out):
         return "".join(aktualisiert)
 
 
+def hangman(num_guesses):
+    stages = [  # The stages of the hangman ASCII art
+        """
+           --------
+           |      |
+           |      O
+           |     \\|/
+           |      |
+           |     / \\
+           -
+        """,
+        """
+           --------
+           |      |
+           |      O
+           |     \\|/
+           |      |
+           |     / 
+           -
+        """,
+        """
+           --------
+           |      |
+           |      O
+           |     \\|/
+           |      |
+           |      
+           -
+        """,
+        """
+           --------
+           |      |
+           |      O
+           |     \\|
+           |      |
+           |     
+           -
+        """,
+        """
+           --------
+           |      |
+           |      O
+           |      |
+           |      |
+           |     
+           -
+        """,
+        """
+           --------
+           |      |
+           |      O
+           |    
+           |      
+           |     
+           -
+        """,
+        """
+           --------
+           |      |
+           |      
+           |    
+           |      
+           |     
+           -
+        """,
+        """
+           --------
+           |      
+           |      
+           |    
+           |      
+           |     
+           -
+        """,
+        """
+
+           |      
+           |      
+           |    
+           |      
+           |     
+           -
+        """,
+        """
+
+
+           |    
+           |      
+           |     
+           -
+        """,
+        """
+
+
+
+           |    
+           |     
+           -
+        """,
+        """
+
+
+
+
+           |     
+           -
+        """,
+        """
+
+
+
+
+
+           -
+        """
+    ]
+
+    return stages[num_guesses - 1] if num_guesses <= 12 else None
+
+
 if __name__ == "__main__":
     wort = zufallswort()
     platzhalter_aktualisieren(wort, [], False)
 
-    erratene_buchstaben, fertig, versuche, maximale_versuche = [], False, 0, 10
+    erratene_buchstaben, fertig, versuche, maximale_versuche = [], False, 0, 11
     while not fertig and versuche < maximale_versuche:
         momentaner_stand = platzhalter_aktualisieren(wort, erratene_buchstaben,
                                                      True)
@@ -53,6 +177,7 @@ if __name__ == "__main__":
         fertig = "_" not in neuer_stand
         if not fertig:
             versuche += neuer_stand == momentaner_stand
+            print(hangman(maximale_versuche - versuche))
         print(f"Du hast noch {maximale_versuche - versuche} Versuche")
         erratene_buchstaben_sortiert = sorted(erratene_buchstaben)
         # Alle kleinschreiben
