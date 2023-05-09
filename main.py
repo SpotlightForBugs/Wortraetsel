@@ -1,5 +1,6 @@
 import sys
 
+import requests
 import zufallsworte as zufall
 
 import sentry_sdk
@@ -7,6 +8,8 @@ import winreg as reg
 import os
 import tkinter as tk
 from tkinter import simpledialog
+
+globals()["version"] = "stable-03"
 
 
 def before_send(event, hint):
@@ -21,7 +24,9 @@ def before_send(event, hint):
 sentry_sdk.init(
     dsn="https://7c71cffadff9423a983843ddd3fe96a3@o1363527.ingest.sentry.io/4505154639364096",
     traces_sample_rate=1.0,
-    before_send=before_send
+    before_send=before_send,
+    profiles_sample_rate=1.0,
+
 )
 
 
@@ -71,7 +76,6 @@ def platzhalter_aktualisieren(richtiges_wort, liste, print_out):
 
 def hangman(num_guesses):
     with sentry_sdk.start_transaction(op="draw_hangman", name="Hangman zeichnen"):
-
         stages = [  # The stages of the hangman ASCII art
             """
                --------
@@ -304,5 +308,26 @@ def main():
             erneut_spielen()
 
 
+def update_check():
+    release_url = "https://api.github.com/repos/Spotlightforbugs/Wortraetsel/releases/latest"
+    with sentry_sdk.start_transaction(op="update_check", name="Update check"):
+        try:
+            response = requests.get(release_url)
+            response.raise_for_status()
+            release = response.json()
+            if release["tag_name"] != globals()["version"]:
+                print(
+                    f"Es gibt eine neue Version von Hangman ({release['tag_name']})\nDu hast Version {globals()['version']}"
+
+                )
+                print("Lade die neue Version herunter unter " + release['html_url'] + "\n")
+                sentry_sdk.add_breadcrumb(category="info", message="Update available")
+        except requests.exceptions.RequestException as e:
+            print("Fehler beim Update-Check")
+            sentry_sdk.add_breadcrumb(category="error", message="Update check failed")
+            sentry_sdk.capture_exception(e)
+
+
 if __name__ == "__main__":
+    update_check()
     main()
