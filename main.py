@@ -9,7 +9,7 @@ import requests
 import sentry_sdk
 import zufallsworte as zufall
 
-globals()["version"] = "stable-07"
+globals()["version"] = "stable-08"
 
 
 def before_send(event, hint):
@@ -26,6 +26,8 @@ sentry_sdk.init(
     traces_sample_rate=1.0,
     before_send=before_send,
     profiles_sample_rate=1.0,
+    server_name = "wortraetsel-frontend",
+    release = globals()["version"]
 )
 
 
