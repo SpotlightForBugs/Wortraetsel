@@ -9,7 +9,7 @@ import requests
 import sentry_sdk
 import zufallsworte as zufall
 
-globals()["version"] = "stable-06"
+globals()["version"] = "stable-07"
 
 
 def before_send(event, hint):
@@ -204,9 +204,11 @@ def log_in():
                 reg.HKEY_CURRENT_USER, "Software\\Hangman", 0, reg.KEY_READ
             )
             value = reg.QueryValueEx(key, "email")
-            if value[0] is not None:
+            value2 = reg.QueryValueEx(key, "secret")
+            if value[0] is not None and value2[0] is not None:
                 os.environ["HANGMAN_EMAIL"] = value[0]
                 sentry_sdk.set_user({"email": value[0]})
+                os.environ["HANGMAN_SECRET"] = value2[0]
                 print("Erfolgreich eingeloggt!")
                 sentry_sdk.add_breadcrumb(
                     category="info", message="User logged in")
@@ -234,21 +236,34 @@ def log_in():
             sentry_sdk.set_user({"email": USER_INP})
             # set the registry key where info will be stored
 
+            api = "https://wortraetsel-api.onrender.com/addUser"
+            template = json.dumps({"email": USER_INP})
+            headers = {"Content-Type": "application/json"}
+            response = requests.post(api, data=template, headers=headers)
+            # if we parse the response as json, we get a key called "id" which is the secret
+            # key for the user
+            secret = response.json()["id"]
+
             # create a key at HKEY_CURRENT_USER\Software\Hangman
             key = reg.CreateKey(reg.HKEY_CURRENT_USER, "Software\\Hangman")
             # set the value of the key to the email address
             reg.SetValueEx(key, "email", 0, reg.REG_SZ, USER_INP)
+            # set the value of the key to the secret
+            reg.SetValueEx(key, "secret", 0, reg.REG_SZ, secret)
+
             # close the key
             reg.CloseKey(key)
             # set the environment variable
             os.environ["HANGMAN_EMAIL"] = USER_INP
+            os.environ["HANGMAN_SECRET"] = secret
 
             # check if the key was created
             key = reg.OpenKey(
                 reg.HKEY_CURRENT_USER, "Software\\Hangman", 0, reg.KEY_READ
             )
             value = reg.QueryValueEx(key, "email")
-            if value[0] == USER_INP:
+            value2 = reg.QueryValueEx(key, "secret")
+            if value[0] == USER_INP and value2[0] == secret:
                 print("Erfolgreich eingeloggt!")
                 sentry_sdk.add_breadcrumb(
                     category="info", message="User logged in")
@@ -316,11 +331,64 @@ def haeufigkeit(buchstabe) -> float:
 
 
 def punkte_system(versuche, wort, erratene_buchstaben, geloest):
-    # Versuche: Versuche, die der Spieler gebraucht hat, um das Spiel zu beenden;
-    # wort ist das Wort, das erraten werden sollte;
-    # erratene_buchstaben sind die Buchstaben, die der Spieler erraten hat;
-    # geloest ist ein boolscher Wert, der angibt, ob das Spiel gelöst wurde oder nicht
-    pass
+    print("Diese Runde ist vorbei!")
+    benutzer_secret = os.environ["HANGMAN_SECRET"]
+    if benutzer_secret and benutzer_secret != "":
+        if geloest:
+            # calculate points
+            points = 1000 - (versuche * 100)
+            print(f"Du wirst {points} Punkte erhalten!")
+            # get the user's secret
+            secret = os.environ["HANGMAN_SECRET"]
+            # get the current points
+            api = "https://wortraetsel-api.onrender.com/getUser/" + secret
+            response = requests.get(api)
+            current_points = response.json()["score"]
+            # add the points
+            api = "https://wortraetsel-api.onrender.com/updatescore"
+            template = json.dumps({"userId": secret, "score": current_points + points})
+            headers = {"Content-Type": "application/json"}
+            response = requests.post(api, data=template, headers=headers)
+            # get the new points
+            api = "https://wortraetsel-api.onrender.com/getUser/" + secret
+            response = requests.get(api)
+            new_points = response.json()["score"]
+            # print the points
+            print(f"Du hast Jetzt {new_points} Punkte! (+{points})")
+            sentry_sdk.add_breadcrumb(
+                category="info", message=f"User got {points} points"
+            )
+        else:  # if the user lost
+            # get the user's secret
+            secret = os.environ["HANGMAN_SECRET"]
+            # get the current points
+            api = "https://wortraetsel-api.onrender.com/getUser/" + secret
+            response = requests.get(api)
+            current_points = response.json()["score"]
+            # remove the points based on the length of the word and how many letters were guessed.
+            # we get the percentage of not guessed letters. This percentage then is removed from the points.
+            percentage = 0
+            for letter in wort:
+                if letter not in erratene_buchstaben:
+                    percentage += 1
+            percentage = percentage / len(wort) * 100
+            points = int(percentage)
+
+            points = points * -1
+            if current_points + points < 0:
+                current_points = 0
+                points = 0
+            # add the points to the user's score
+            api = "https://wortraetsel-api.onrender.com/updatescore"
+            template = json.dumps({"userId": secret, "score": current_points + points})
+            headers = {"Content-Type": "application/json"}
+            requests.post(api, data=template, headers=headers)
+            print(f"Du hast {points} Punkte verloren!, du hast jetzt {current_points + points} Punkte")
+
+
+    else:
+        sentry_sdk.add_breadcrumb(category="info", message="No secret found")
+        print("Cloud-Variable HANGMAN_SECRET nicht gefunden. Punkte werden nicht gespeichert.")
 
 
 def main():
@@ -364,6 +432,7 @@ def main():
             print(f"Du hast das Wort {wort.capitalize()} erraten!")
             sentry_sdk.add_breadcrumb(
                 category="info", message=f"Word guessed: {wort}")
+            punkte_system(versuche, wort, erratene_buchstaben, True)
             erneut_spielen()
         else:
             print(
@@ -372,6 +441,7 @@ def main():
             sentry_sdk.add_breadcrumb(
                 category="info", message=f"Word not guessed: {wort}"
             )
+            punkte_system(versuche, wort, erratene_buchstaben, False)
             erneut_spielen()
 
 
@@ -401,11 +471,7 @@ def update_check():
             sentry_sdk.capture_exception(e)
 
 
-
-
-
 if __name__ == "__main__":
-
     print("Nach Updates suchen...")
     update_check()
     print("Starte Hangman...")
