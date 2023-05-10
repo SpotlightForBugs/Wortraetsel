@@ -1,9 +1,10 @@
 import json
 import os
+import sys
 import tkinter as tk
 import winreg as reg
 from tkinter import simpledialog
-import sys
+
 import requests
 import sentry_sdk
 import zufallsworte as zufall
