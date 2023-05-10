@@ -1,3 +1,4 @@
+import json
 import os
 import tkinter as tk
 import winreg as reg
@@ -58,7 +59,7 @@ def erraten(wort, erratene_buchstaben, dev=False):
 
 def platzhalter_aktualisieren(richtiges_wort, liste, print_out):
     with sentry_sdk.start_transaction(
-        op="update_placeholder", name="Platzhalter aktualisieren"
+            op="update_placeholder", name="Platzhalter aktualisieren"
     ):
         if len(liste) == 0:
             wort_platzhalter = "_" * len(richtiges_wort)
@@ -220,7 +221,7 @@ def log_in():
         USER_INP = simpledialog.askstring(
             title="Hangman",
             prompt="Bitte gib deine Email-Adresse ein, um deine Punkte zu speichern. Deine "
-            "Email-Adresse wird nicht an Dritte weitergegeben.",
+                   "Email-Adresse wird nicht an Dritte weitergegeben.",
         )
 
         if "@" not in USER_INP or "." not in USER_INP or USER_INP is None:
@@ -274,6 +275,51 @@ def erneut_spielen():
             print("Auf Wiedersehen!")
             sentry_sdk.add_breadcrumb(category="info", message="Game ended")
             sys.exit()
+
+
+def haeufigkeit(buchstabe) -> float:
+    letter_frequencies = [
+        ("E", 17.40),
+        ("N", 9.78),
+        ("I", 7.55),
+        ("S", 7.27),
+        ("R", 7.00),
+        ("A", 6.51),
+        ("T", 6.15),
+        ("D", 5.08),
+        ("H", 4.76),
+        ("U", 4.35),
+        ("L", 3.44),
+        ("C", 3.06),
+        ("G", 3.01),
+        ("M", 2.53),
+        ("O", 2.51),
+        ("B", 1.89),
+        ("W", 1.89),
+        ("F", 1.66),
+        ("K", 1.21),
+        ("Z", 1.13),
+        ("P", 0.79),
+        ("V", 0.67),
+        ("SS", 0.31),  # two-letter alternative for "ß"
+        ("J", 0.27),
+        ("Y", 0.04),
+        ("X", 0.03),
+        ("Q", 0.02)
+    ]
+
+    for letter, frequency in letter_frequencies:
+        if letter == buchstabe.upper():
+            return frequency
+    return 0
+
+
+def punkte_system(versuche, wort, erratene_buchstaben, geloest):
+    # Versuche: Versuche, die der Spieler gebraucht hat, um das Spiel zu beenden;
+    # wort ist das Wort, das erraten werden sollte;
+    # erratene_buchstaben sind die Buchstaben, die der Spieler erraten hat;
+    # geloest ist ein boolscher Wert, der angibt, ob das Spiel gelöst wurde oder nicht
+    pass
 
 
 def main():
@@ -354,7 +400,11 @@ def update_check():
             sentry_sdk.capture_exception(e)
 
 
+
+
+
 if __name__ == "__main__":
+
     print("Nach Updates suchen...")
     update_check()
     print("Starte Hangman...")
