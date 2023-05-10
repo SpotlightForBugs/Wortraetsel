@@ -26,8 +26,8 @@ sentry_sdk.init(
     traces_sample_rate=1.0,
     before_send=before_send,
     profiles_sample_rate=1.0,
-    server_name = "wortraetsel-frontend",
-    release = globals()["version"]
+    server_name="wortraetsel-frontend",
+    release=globals()["version"],
 )
 
 
@@ -62,7 +62,7 @@ def erraten(wort, erratene_buchstaben, dev=False):
 
 def platzhalter_aktualisieren(richtiges_wort, liste, print_out):
     with sentry_sdk.start_transaction(
-            op="update_placeholder", name="Platzhalter aktualisieren"
+        op="update_placeholder", name="Platzhalter aktualisieren"
     ):
         if len(liste) == 0:
             wort_platzhalter = "_" * len(richtiges_wort)
@@ -226,7 +226,7 @@ def log_in():
         USER_INP = simpledialog.askstring(
             title="Hangman",
             prompt="Bitte gib deine Email-Adresse ein, um deine Punkte zu speichern. Deine "
-                   "Email-Adresse wird nicht an Dritte weitergegeben.",
+            "Email-Adresse wird nicht an Dritte weitergegeben.",
         )
 
         if "@" not in USER_INP or "." not in USER_INP or USER_INP is None:
@@ -323,7 +323,7 @@ def haeufigkeit(buchstabe) -> float:
         ("J", 0.27),
         ("Y", 0.04),
         ("X", 0.03),
-        ("Q", 0.02)
+        ("Q", 0.02),
     ]
 
     for letter, frequency in letter_frequencies:
@@ -348,7 +348,8 @@ def punkte_system(versuche, wort, erratene_buchstaben, geloest):
             current_points = response.json()["score"]
             # add the points
             api = "https://wortraetsel-api.onrender.com/updatescore"
-            template = json.dumps({"userId": secret, "score": current_points + points})
+            template = json.dumps(
+                {"userId": secret, "score": current_points + points})
             headers = {"Content-Type": "application/json"}
             response = requests.post(api, data=template, headers=headers)
             # get the new points
@@ -382,15 +383,19 @@ def punkte_system(versuche, wort, erratene_buchstaben, geloest):
                 points = 0
             # add the points to the user's score
             api = "https://wortraetsel-api.onrender.com/updatescore"
-            template = json.dumps({"userId": secret, "score": current_points + points})
+            template = json.dumps(
+                {"userId": secret, "score": current_points + points})
             headers = {"Content-Type": "application/json"}
             requests.post(api, data=template, headers=headers)
-            print(f"Du hast {points} Punkte verloren!, du hast jetzt {current_points + points} Punkte")
-
+            print(
+                f"Du hast {points} Punkte verloren!, du hast jetzt {current_points + points} Punkte"
+            )
 
     else:
         sentry_sdk.add_breadcrumb(category="info", message="No secret found")
-        print("Cloud-Variable HANGMAN_SECRET nicht gefunden. Punkte werden nicht gespeichert.")
+        print(
+            "Cloud-Variable HANGMAN_SECRET nicht gefunden. Punkte werden nicht gespeichert."
+        )
 
 
 def main():
