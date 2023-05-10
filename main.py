@@ -60,7 +60,7 @@ def erraten(wort, erratene_buchstaben, dev=False):
 
 def platzhalter_aktualisieren(richtiges_wort, liste, print_out):
     with sentry_sdk.start_transaction(
-            op="update_placeholder", name="Platzhalter aktualisieren"
+        op="update_placeholder", name="Platzhalter aktualisieren"
     ):
         if len(liste) == 0:
             wort_platzhalter = "_" * len(richtiges_wort)
@@ -222,7 +222,7 @@ def log_in():
         USER_INP = simpledialog.askstring(
             title="Hangman",
             prompt="Bitte gib deine Email-Adresse ein, um deine Punkte zu speichern. Deine "
-                   "Email-Adresse wird nicht an Dritte weitergegeben.",
+            "Email-Adresse wird nicht an Dritte weitergegeben.",
         )
 
         if "@" not in USER_INP or "." not in USER_INP or USER_INP is None:
@@ -306,7 +306,7 @@ def haeufigkeit(buchstabe) -> float:
         ("J", 0.27),
         ("Y", 0.04),
         ("X", 0.03),
-        ("Q", 0.02)
+        ("Q", 0.02),
     ]
 
     for letter, frequency in letter_frequencies:
@@ -401,11 +401,7 @@ def update_check():
             sentry_sdk.capture_exception(e)
 
 
-
-
-
 if __name__ == "__main__":
-
     print("Nach Updates suchen...")
     update_check()
     print("Starte Hangman...")
