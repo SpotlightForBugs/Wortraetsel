@@ -9,7 +9,7 @@ import requests
 import sentry_sdk
 import zufallsworte as zufall
 
-globals()["version"] = "stable-08"
+globals()["version"] = "stable-09"
 
 
 def before_send(event, hint):
@@ -26,8 +26,8 @@ sentry_sdk.init(
     traces_sample_rate=1.0,
     before_send=before_send,
     profiles_sample_rate=1.0,
-    server_name = "wortraetsel-frontend",
-    release = globals()["version"]
+    server_name="wortraetsel-frontend",
+    release=globals()["version"]
 )
 
 
@@ -332,6 +332,27 @@ def haeufigkeit(buchstabe) -> float:
     return 0
 
 
+def getRanking(user_secret) -> int:
+    # Wir holen uns die Liste aller User
+    api = "https://wortraetsel-api.onrender.com/getAllUsers"
+    response = requests.get(api)
+    users = response.json()
+    # Die response enthält sieht so aus:
+    # [
+    #     {
+    #         "userId": "secret",
+    #         "score": 700
+    #     }
+    # ]
+    # Wir sortieren die Liste nach dem Score
+    users.sort(key=lambda x: x["score"], reverse=True)
+    # Wir suchen den User mit dem übergebenen Secret
+    for index, user in enumerate(users):
+        if user["userId"] == user_secret:
+            return index + 1
+    return -1
+
+
 def punkte_system(versuche, wort, erratene_buchstaben, geloest):
     print("Diese Runde ist vorbei!")
     benutzer_secret = os.environ["HANGMAN_SECRET"]
@@ -339,7 +360,6 @@ def punkte_system(versuche, wort, erratene_buchstaben, geloest):
         if geloest:
             # calculate points
             points = 1000 - (versuche * 100)
-            print(f"Du wirst {points} Punkte erhalten!")
             # get the user's secret
             secret = os.environ["HANGMAN_SECRET"]
             # get the current points
@@ -360,6 +380,11 @@ def punkte_system(versuche, wort, erratene_buchstaben, geloest):
             sentry_sdk.add_breadcrumb(
                 category="info", message=f"User got {points} points"
             )
+            print(f"Damit bist du auf Platz {getRanking(secret)}!")
+            sentry_sdk.add_breadcrumb(
+                category="info", message=f"User is now on rank {getRanking(secret)}"
+            )
+
         else:  # if the user lost
             # get the user's secret
             secret = os.environ["HANGMAN_SECRET"]
@@ -386,6 +411,13 @@ def punkte_system(versuche, wort, erratene_buchstaben, geloest):
             headers = {"Content-Type": "application/json"}
             requests.post(api, data=template, headers=headers)
             print(f"Du hast {points} Punkte verloren!, du hast jetzt {current_points + points} Punkte")
+            sentry_sdk.add_breadcrumb(
+                category="info", message=f"User lost {points} points"
+            )
+            print(f"Damit bist du auf Platz {getRanking(secret)}!")
+            sentry_sdk.add_breadcrumb(
+                category="info", message=f"User is now on rank {getRanking(secret)}"
+            )
 
 
     else:
