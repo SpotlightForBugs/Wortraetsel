@@ -9,7 +9,7 @@ import requests
 import sentry_sdk
 import zufallsworte as zufall
 
-globals()["version"] = "stable-09"
+globals()["version"] = "stable-09.1"
 
 
 def before_send(event, hint):
@@ -209,7 +209,7 @@ def log_in():
             value2 = reg.QueryValueEx(key, "secret")
             if value[0] is not None and value2[0] is not None:
                 os.environ["HANGMAN_EMAIL"] = value[0]
-                sentry_sdk.set_user({"email": value[0]})
+                sentry_sdk.set_user({"email": value[0], "id": value2[0]})
                 os.environ["HANGMAN_SECRET"] = value2[0]
                 print("Erfolgreich eingeloggt!")
                 sentry_sdk.add_breadcrumb(
@@ -246,6 +246,7 @@ def log_in():
             # key for the user
             secret = response.json()["id"]
 
+
             # create a key at HKEY_CURRENT_USER\Software\Hangman
             key = reg.CreateKey(reg.HKEY_CURRENT_USER, "Software\\Hangman")
             # set the value of the key to the email address
@@ -258,6 +259,8 @@ def log_in():
             # set the environment variable
             os.environ["HANGMAN_EMAIL"] = USER_INP
             os.environ["HANGMAN_SECRET"] = secret
+
+            sentry_sdk.set_user({"email": USER_INP, "id": secret})
 
             # check if the key was created
             key = reg.OpenKey(
