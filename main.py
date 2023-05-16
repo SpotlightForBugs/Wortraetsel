@@ -1,5 +1,6 @@
 import json
 import os
+import random
 import sys
 import tkinter as tk
 import winreg as reg
@@ -27,7 +28,7 @@ sentry_sdk.init(
     before_send=before_send,
     profiles_sample_rate=1.0,
     server_name="wortraetsel-frontend",
-    release=globals()["version"]
+    release=globals()["version"],
 )
 
 
@@ -39,8 +40,23 @@ def ersetze_umlaute(s):
 
 def zufallswort():
     with sentry_sdk.start_transaction(op="random_word", name="Zufallswort generieren"):
-        z_wort = zufall.zufallswoerter(1)
-        return ersetze_umlaute(z_wort[0].lower())
+        if not globals().get("language"):
+            language = ""
+        else:
+            language = globals()["language"]
+        while language != "de" and language != "fi":
+            language = input("Welche Sprache? (de/fi) > ").lower()
+        globals()["language"] = language
+
+        if language == "fi":
+            finish_words_url = "https://raw.githubusercontent.com/hugovk/everyfinnishword/master/kaikkisanat.txt"
+            r = requests.get(finish_words_url)
+            words = r.text.split("\n")
+            words_list = [word for word in words if len(word) > 3]
+            return ersetze_umlaute(random.choice(words_list).lower())
+        else:
+            z_wort = zufall.zufallswoerter(1)
+            return ersetze_umlaute(z_wort[0].lower())
 
 
 def erraten(wort, erratene_buchstaben, dev=False):
@@ -212,8 +228,7 @@ def log_in():
                 sentry_sdk.set_user({"email": value[0], "id": value2[0]})
                 os.environ["HANGMAN_SECRET"] = value2[0]
                 print("Erfolgreich eingeloggt!")
-                sentry_sdk.add_breadcrumb(
-                    category="info", message="User logged in")
+                sentry_sdk.add_breadcrumb(category="info", message="User logged in")
                 return
         except FileNotFoundError:
             pass
@@ -231,8 +246,7 @@ def log_in():
 
         if "@" not in USER_INP or "." not in USER_INP or USER_INP is None:
             print("Bitte gib eine gültige Email-Adresse ein!")
-            sentry_sdk.add_breadcrumb(
-                category="error", message="Invalid email")
+            sentry_sdk.add_breadcrumb(category="error", message="Invalid email")
             log_in()
         else:
             sentry_sdk.set_user({"email": USER_INP})
@@ -245,7 +259,6 @@ def log_in():
             # if we parse the response as json, we get a key called "id" which is the secret
             # key for the user
             secret = response.json()["id"]
-
 
             # create a key at HKEY_CURRENT_USER\Software\Hangman
             key = reg.CreateKey(reg.HKEY_CURRENT_USER, "Software\\Hangman")
@@ -270,8 +283,7 @@ def log_in():
             value2 = reg.QueryValueEx(key, "secret")
             if value[0] == USER_INP and value2[0] == secret:
                 print("Erfolgreich eingeloggt!")
-                sentry_sdk.add_breadcrumb(
-                    category="info", message="User logged in")
+                sentry_sdk.add_breadcrumb(category="info", message="User logged in")
             else:
                 print("Fehler beim Einloggen!")
                 sentry_sdk.add_breadcrumb(
@@ -326,7 +338,7 @@ def haeufigkeit(buchstabe) -> float:
         ("J", 0.27),
         ("Y", 0.04),
         ("X", 0.03),
-        ("Q", 0.02)
+        ("Q", 0.02),
     ]
 
     for letter, frequency in letter_frequencies:
@@ -413,7 +425,9 @@ def punkte_system(versuche, wort, erratene_buchstaben, geloest):
             template = json.dumps({"userId": secret, "score": current_points + points})
             headers = {"Content-Type": "application/json"}
             requests.post(api, data=template, headers=headers)
-            print(f"Du hast {points} Punkte verloren!, du hast jetzt {current_points + points} Punkte")
+            print(
+                f"Du hast {points} Punkte verloren!, du hast jetzt {current_points + points} Punkte"
+            )
             sentry_sdk.add_breadcrumb(
                 category="info", message=f"User lost {points} points"
             )
@@ -422,10 +436,11 @@ def punkte_system(versuche, wort, erratene_buchstaben, geloest):
                 category="info", message=f"User is now on rank {getRanking(secret)}"
             )
 
-
     else:
         sentry_sdk.add_breadcrumb(category="info", message="No secret found")
-        print("Cloud-Variable HANGMAN_SECRET nicht gefunden. Punkte werden nicht gespeichert.")
+        print(
+            "Cloud-Variable HANGMAN_SECRET nicht gefunden. Punkte werden nicht gespeichert."
+        )
 
 
 def main():
@@ -435,8 +450,7 @@ def main():
             log_in()
 
         wort = zufallswort()
-        sentry_sdk.add_breadcrumb(
-            category="info", message=f"Word chosen: {wort}")
+        sentry_sdk.add_breadcrumb(category="info", message=f"Word chosen: {wort}")
         platzhalter_aktualisieren(wort, [], False)
 
         erratene_buchstaben, fertig, versuche, maximale_versuche = [], False, 0, 11
@@ -445,8 +459,7 @@ def main():
                 wort, erratene_buchstaben, True
             )
             erratene_buchstaben.append(erraten(wort, erratene_buchstaben))
-            neuer_stand = platzhalter_aktualisieren(
-                wort, erratene_buchstaben, False)
+            neuer_stand = platzhalter_aktualisieren(wort, erratene_buchstaben, False)
             fertig = "_" not in neuer_stand
             if not fertig:
                 versuche += neuer_stand == momentaner_stand
@@ -467,8 +480,7 @@ def main():
 
         if fertig:
             print(f"Du hast das Wort {wort.capitalize()} erraten!")
-            sentry_sdk.add_breadcrumb(
-                category="info", message=f"Word guessed: {wort}")
+            sentry_sdk.add_breadcrumb(category="info", message=f"Word guessed: {wort}")
             punkte_system(versuche, wort, erratene_buchstaben, True)
             erneut_spielen()
         else:
@@ -496,15 +508,12 @@ def update_check():
                     f"Es gibt eine neue Version von Hangman ({release['tag_name']})\nDu hast Version {globals()['version']}"
                 )
                 print(
-                    "Lade die neue Version herunter unter " +
-                    release["html_url"] + "\n"
+                    "Lade die neue Version herunter unter " + release["html_url"] + "\n"
                 )
-                sentry_sdk.add_breadcrumb(
-                    category="info", message="Update available")
+                sentry_sdk.add_breadcrumb(category="info", message="Update available")
         except requests.exceptions.RequestException as e:
             print("Fehler beim Update-Check")
-            sentry_sdk.add_breadcrumb(
-                category="error", message="Update check failed")
+            sentry_sdk.add_breadcrumb(category="error", message="Update check failed")
             sentry_sdk.capture_exception(e)
 
 
