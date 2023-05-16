@@ -33,13 +33,15 @@ sentry_sdk.init(
 
 
 def ersetze_umlaute(s):
-    with sentry_sdk.start_transaction(op="replace_umlauts", name="Umlaute ersetzen"):
+    with sentry_sdk.start_transaction(op="replace_umlauts",
+                                      name="Umlaute ersetzen"):
         special_char_map = {"ä": "ae", "ü": "ue", "ö": "oe", "ß": "ss"}
         return s.translate(str.maketrans(special_char_map))
 
 
 def zufallswort():
-    with sentry_sdk.start_transaction(op="random_word", name="Zufallswort generieren"):
+    with sentry_sdk.start_transaction(op="random_word",
+                                      name="Zufallswort generieren"):
         if not globals().get("language"):
             language = ""
         else:
@@ -68,8 +70,8 @@ def erraten(wort, erratene_buchstaben, dev=False):
         if len(versuch) > 1:
             print("Bitte gib nur einen Buchstaben ein!")
             sentry_sdk.add_breadcrumb(
-                category="error", message="More than one letter entered: " + versuch
-            )
+                category="error",
+                message="More than one letter entered: " + versuch)
             return erraten(wort, erratene_buchstaben)
         if versuch in wort and versuch not in erratene_buchstaben and versuch != "":
             return versuch
@@ -77,9 +79,8 @@ def erraten(wort, erratene_buchstaben, dev=False):
 
 
 def platzhalter_aktualisieren(richtiges_wort, liste, print_out):
-    with sentry_sdk.start_transaction(
-            op="update_placeholder", name="Platzhalter aktualisieren"
-    ):
+    with sentry_sdk.start_transaction(op="update_placeholder",
+                                      name="Platzhalter aktualisieren"):
         if len(liste) == 0:
             wort_platzhalter = "_" * len(richtiges_wort)
             if print_out:
@@ -87,7 +88,8 @@ def platzhalter_aktualisieren(richtiges_wort, liste, print_out):
                 return wort_platzhalter
         else:
             aktualisiert = [
-                buchstabe if buchstabe in liste else "_" for buchstabe in richtiges_wort
+                buchstabe if buchstabe in liste else "_"
+                for buchstabe in richtiges_wort
             ]
             if print_out:
                 print("".join(aktualisiert))
@@ -95,7 +97,8 @@ def platzhalter_aktualisieren(richtiges_wort, liste, print_out):
 
 
 def hangman(num_guesses):
-    with sentry_sdk.start_transaction(op="draw_hangman", name="Hangman zeichnen"):
+    with sentry_sdk.start_transaction(op="draw_hangman",
+                                      name="Hangman zeichnen"):
         stages = [  # The stages of the hangman ASCII art
             """
                --------
@@ -218,9 +221,8 @@ def hangman(num_guesses):
 def log_in():
     with sentry_sdk.start_transaction(op="log_in", name="Anmeldung"):
         try:
-            key = reg.OpenKey(
-                reg.HKEY_CURRENT_USER, "Software\\Hangman", 0, reg.KEY_READ
-            )
+            key = reg.OpenKey(reg.HKEY_CURRENT_USER, "Software\\Hangman", 0,
+                              reg.KEY_READ)
             value = reg.QueryValueEx(key, "email")
             value2 = reg.QueryValueEx(key, "secret")
             if value[0] is not None and value2[0] is not None:
@@ -228,7 +230,8 @@ def log_in():
                 sentry_sdk.set_user({"email": value[0], "id": value2[0]})
                 os.environ["HANGMAN_SECRET"] = value2[0]
                 print("Erfolgreich eingeloggt!")
-                sentry_sdk.add_breadcrumb(category="info", message="User logged in")
+                sentry_sdk.add_breadcrumb(category="info",
+                                          message="User logged in")
                 return
         except FileNotFoundError:
             pass
@@ -241,12 +244,13 @@ def log_in():
         USER_INP = simpledialog.askstring(
             title="Hangman",
             prompt="Bitte gib deine Email-Adresse ein, um deine Punkte zu speichern. Deine "
-                   "Email-Adresse wird nicht an Dritte weitergegeben.",
+            "Email-Adresse wird nicht an Dritte weitergegeben.",
         )
 
         if "@" not in USER_INP or "." not in USER_INP or USER_INP is None:
             print("Bitte gib eine gültige Email-Adresse ein!")
-            sentry_sdk.add_breadcrumb(category="error", message="Invalid email")
+            sentry_sdk.add_breadcrumb(category="error",
+                                      message="Invalid email")
             log_in()
         else:
             sentry_sdk.set_user({"email": USER_INP})
@@ -276,35 +280,33 @@ def log_in():
             sentry_sdk.set_user({"email": USER_INP, "id": secret})
 
             # check if the key was created
-            key = reg.OpenKey(
-                reg.HKEY_CURRENT_USER, "Software\\Hangman", 0, reg.KEY_READ
-            )
+            key = reg.OpenKey(reg.HKEY_CURRENT_USER, "Software\\Hangman", 0,
+                              reg.KEY_READ)
             value = reg.QueryValueEx(key, "email")
             value2 = reg.QueryValueEx(key, "secret")
             if value[0] == USER_INP and value2[0] == secret:
                 print("Erfolgreich eingeloggt!")
-                sentry_sdk.add_breadcrumb(category="info", message="User logged in")
+                sentry_sdk.add_breadcrumb(category="info",
+                                          message="User logged in")
             else:
                 print("Fehler beim Einloggen!")
-                sentry_sdk.add_breadcrumb(
-                    category="error", message="User not logged in"
-                )
+                sentry_sdk.add_breadcrumb(category="error",
+                                          message="User not logged in")
                 log_in()
 
 
 def erneut_spielen():
-    with sentry_sdk.start_transaction(op="replay_console", name="erneut spielen"):
+    with sentry_sdk.start_transaction(op="replay_console",
+                                      name="erneut spielen"):
         print("Tippe 'j' in die Konsole, um erneut zu spielen.")
         sentry_sdk.add_breadcrumb(category="info", message="Play again?")
         if input().lower().startswith("j") or input().lower().startswith("y"):
-            sentry_sdk.add_breadcrumb(
-                category="info", message="User wants to play again"
-            )
+            sentry_sdk.add_breadcrumb(category="info",
+                                      message="User wants to play again")
             main()
         else:
             sentry_sdk.add_breadcrumb(
-                category="info", message="User does not want to play again"
-            )
+                category="info", message="User does not want to play again")
             print("Auf Wiedersehen!")
             sentry_sdk.add_breadcrumb(category="info", message="Game ended")
             sys.exit()
@@ -383,7 +385,10 @@ def punkte_system(versuche, wort, erratene_buchstaben, geloest):
             current_points = response.json()["score"]
             # add the points
             api = "https://wortraetsel-api.onrender.com/updatescore"
-            template = json.dumps({"userId": secret, "score": current_points + points})
+            template = json.dumps({
+                "userId": secret,
+                "score": current_points + points
+            })
             headers = {"Content-Type": "application/json"}
             response = requests.post(api, data=template, headers=headers)
             # get the new points
@@ -392,13 +397,12 @@ def punkte_system(versuche, wort, erratene_buchstaben, geloest):
             new_points = response.json()["score"]
             # print the points
             print(f"Du hast Jetzt {new_points} Punkte! (+{points})")
-            sentry_sdk.add_breadcrumb(
-                category="info", message=f"User got {points} points"
-            )
+            sentry_sdk.add_breadcrumb(category="info",
+                                      message=f"User got {points} points")
             print(f"Damit bist du auf Platz {getRanking(secret)}!")
             sentry_sdk.add_breadcrumb(
-                category="info", message=f"User is now on rank {getRanking(secret)}"
-            )
+                category="info",
+                message=f"User is now on rank {getRanking(secret)}")
 
         else:  # if the user lost
             # get the user's secret
@@ -422,19 +426,21 @@ def punkte_system(versuche, wort, erratene_buchstaben, geloest):
                 points = 0
             # add the points to the user's score
             api = "https://wortraetsel-api.onrender.com/updatescore"
-            template = json.dumps({"userId": secret, "score": current_points + points})
+            template = json.dumps({
+                "userId": secret,
+                "score": current_points + points
+            })
             headers = {"Content-Type": "application/json"}
             requests.post(api, data=template, headers=headers)
             print(
                 f"Du hast {points} Punkte verloren!, du hast jetzt {current_points + points} Punkte"
             )
-            sentry_sdk.add_breadcrumb(
-                category="info", message=f"User lost {points} points"
-            )
+            sentry_sdk.add_breadcrumb(category="info",
+                                      message=f"User lost {points} points")
             print(f"Damit bist du auf Platz {getRanking(secret)}!")
             sentry_sdk.add_breadcrumb(
-                category="info", message=f"User is now on rank {getRanking(secret)}"
-            )
+                category="info",
+                message=f"User is now on rank {getRanking(secret)}")
 
     else:
         sentry_sdk.add_breadcrumb(category="info", message="No secret found")
@@ -450,16 +456,17 @@ def main():
             log_in()
 
         wort = zufallswort()
-        sentry_sdk.add_breadcrumb(category="info", message=f"Word chosen: {wort}")
+        sentry_sdk.add_breadcrumb(category="info",
+                                  message=f"Word chosen: {wort}")
         platzhalter_aktualisieren(wort, [], False)
 
         erratene_buchstaben, fertig, versuche, maximale_versuche = [], False, 0, 11
         while not fertig and versuche < maximale_versuche:
             momentaner_stand = platzhalter_aktualisieren(
-                wort, erratene_buchstaben, True
-            )
+                wort, erratene_buchstaben, True)
             erratene_buchstaben.append(erraten(wort, erratene_buchstaben))
-            neuer_stand = platzhalter_aktualisieren(wort, erratene_buchstaben, False)
+            neuer_stand = platzhalter_aktualisieren(wort, erratene_buchstaben,
+                                                    False)
             fertig = "_" not in neuer_stand
             if not fertig:
                 versuche += neuer_stand == momentaner_stand
@@ -472,24 +479,23 @@ def main():
             ]
             # Doppelte entfernen
             erratene_buchstaben_sortiert = list(
-                dict.fromkeys(erratene_buchstaben_sortiert)
-            )
+                dict.fromkeys(erratene_buchstaben_sortiert))
             print(
                 f"Versuchte Buchstaben: {[buchstabe.lower() + '' for buchstabe in erratene_buchstaben_sortiert]}"
             )
 
         if fertig:
             print(f"Du hast das Wort {wort.capitalize()} erraten!")
-            sentry_sdk.add_breadcrumb(category="info", message=f"Word guessed: {wort}")
+            sentry_sdk.add_breadcrumb(category="info",
+                                      message=f"Word guessed: {wort}")
             punkte_system(versuche, wort, erratene_buchstaben, True)
             erneut_spielen()
         else:
             print(
                 f"Du hast das Wort nicht erraten\nDas richtige Wort war {wort.capitalize()}"
             )
-            sentry_sdk.add_breadcrumb(
-                category="info", message=f"Word not guessed: {wort}"
-            )
+            sentry_sdk.add_breadcrumb(category="info",
+                                      message=f"Word not guessed: {wort}")
             punkte_system(versuche, wort, erratene_buchstaben, False)
             erneut_spielen()
 
@@ -507,13 +513,14 @@ def update_check():
                 print(
                     f"Es gibt eine neue Version von Hangman ({release['tag_name']})\nDu hast Version {globals()['version']}"
                 )
-                print(
-                    "Lade die neue Version herunter unter " + release["html_url"] + "\n"
-                )
-                sentry_sdk.add_breadcrumb(category="info", message="Update available")
+                print("Lade die neue Version herunter unter " +
+                      release["html_url"] + "\n")
+                sentry_sdk.add_breadcrumb(category="info",
+                                          message="Update available")
         except requests.exceptions.RequestException as e:
             print("Fehler beim Update-Check")
-            sentry_sdk.add_breadcrumb(category="error", message="Update check failed")
+            sentry_sdk.add_breadcrumb(category="error",
+                                      message="Update check failed")
             sentry_sdk.capture_exception(e)
 
 
