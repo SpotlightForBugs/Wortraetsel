@@ -2,7 +2,8 @@ import json
 import os
 import sys
 import tkinter as tk
-import winreg as reg
+if os.name == "nt":
+    import winreg as reg
 from tkinter import simpledialog
 
 import requests
@@ -357,75 +358,79 @@ def getRanking(user_secret) -> int:
 
 
 def punkte_system(versuche, wort, erratene_buchstaben, geloest):
-    print("Diese Runde ist vorbei!")
-    benutzer_secret = os.environ["HANGMAN_SECRET"]
-    if benutzer_secret and benutzer_secret != "":
-        if geloest:
-            # calculate points
-            points = 1000 - (versuche * 100)
-            # get the user's secret
-            secret = os.environ["HANGMAN_SECRET"]
-            # get the current points
-            api = "https://wortraetsel-api.onrender.com/getUser/" + secret
-            response = requests.get(api)
-            current_points = response.json()["score"]
-            # add the points
-            api = "https://wortraetsel-api.onrender.com/updatescore"
-            template = json.dumps({"userId": secret, "score": current_points + points})
-            headers = {"Content-Type": "application/json"}
-            response = requests.post(api, data=template, headers=headers)
-            # get the new points
-            api = "https://wortraetsel-api.onrender.com/getUser/" + secret
-            response = requests.get(api)
-            new_points = response.json()["score"]
-            # print the points
-            print(f"Du hast Jetzt {new_points} Punkte! (+{points})")
-            sentry_sdk.add_breadcrumb(
-                category="info", message=f"User got {points} points"
-            )
-            print(f"Damit bist du auf Platz {getRanking(secret)}!")
-            sentry_sdk.add_breadcrumb(
-                category="info", message=f"User is now on rank {getRanking(secret)}"
-            )
+    if os.name == "nt":
+        print("Diese Runde ist vorbei!")
+        benutzer_secret = os.environ["HANGMAN_SECRET"]
+        if benutzer_secret and benutzer_secret != "":
+            if geloest:
+                # calculate points
+                points = 1000 - (versuche * 100)
+                # get the user's secret
+                secret = os.environ["HANGMAN_SECRET"]
+                # get the current points
+                api = "https://wortraetsel-api.onrender.com/getUser/" + secret
+                response = requests.get(api)
+                current_points = response.json()["score"]
+                # add the points
+                api = "https://wortraetsel-api.onrender.com/updatescore"
+                template = json.dumps({"userId": secret, "score": current_points + points})
+                headers = {"Content-Type": "application/json"}
+                response = requests.post(api, data=template, headers=headers)
+                # get the new points
+                api = "https://wortraetsel-api.onrender.com/getUser/" + secret
+                response = requests.get(api)
+                new_points = response.json()["score"]
+                # print the points
+                print(f"Du hast Jetzt {new_points} Punkte! (+{points})")
+                sentry_sdk.add_breadcrumb(
+                    category="info", message=f"User got {points} points"
+                )
+                print(f"Damit bist du auf Platz {getRanking(secret)}!")
+                sentry_sdk.add_breadcrumb(
+                    category="info", message=f"User is now on rank {getRanking(secret)}"
+                )
 
-        else:  # if the user lost
-            # get the user's secret
-            secret = os.environ["HANGMAN_SECRET"]
-            # get the current points
-            api = "https://wortraetsel-api.onrender.com/getUser/" + secret
-            response = requests.get(api)
-            current_points = response.json()["score"]
-            # remove the points based on the length of the word and how many letters were guessed.
-            # we get the percentage of not guessed letters. This percentage then is removed from the points.
-            percentage = 0
-            for letter in wort:
-                if letter not in erratene_buchstaben:
-                    percentage += 1
-            percentage = percentage / len(wort) * 100
-            points = int(percentage)
+            else:  # if the user lost
+                # get the user's secret
+                secret = os.environ["HANGMAN_SECRET"]
+                # get the current points
+                api = "https://wortraetsel-api.onrender.com/getUser/" + secret
+                response = requests.get(api)
+                current_points = response.json()["score"]
+                # remove the points based on the length of the word and how many letters were guessed.
+                # we get the percentage of not guessed letters. This percentage then is removed from the points.
+                percentage = 0
+                for letter in wort:
+                    if letter not in erratene_buchstaben:
+                        percentage += 1
+                percentage = percentage / len(wort) * 100
+                points = int(percentage)
 
-            points = points * -1
-            if current_points + points < 0:
-                current_points = 0
-                points = 0
-            # add the points to the user's score
-            api = "https://wortraetsel-api.onrender.com/updatescore"
-            template = json.dumps({"userId": secret, "score": current_points + points})
-            headers = {"Content-Type": "application/json"}
-            requests.post(api, data=template, headers=headers)
-            print(f"Du hast {points} Punkte verloren!, du hast jetzt {current_points + points} Punkte")
-            sentry_sdk.add_breadcrumb(
-                category="info", message=f"User lost {points} points"
-            )
-            print(f"Damit bist du auf Platz {getRanking(secret)}!")
-            sentry_sdk.add_breadcrumb(
-                category="info", message=f"User is now on rank {getRanking(secret)}"
-            )
+                points = points * -1
+                if current_points + points < 0:
+                    current_points = 0
+                    points = 0
+                # add the points to the user's score
+                api = "https://wortraetsel-api.onrender.com/updatescore"
+                template = json.dumps({"userId": secret, "score": current_points + points})
+                headers = {"Content-Type": "application/json"}
+                requests.post(api, data=template, headers=headers)
+                print(f"Du hast {points} Punkte verloren!, du hast jetzt {current_points + points} Punkte")
+                sentry_sdk.add_breadcrumb(
+                    category="info", message=f"User lost {points} points"
+                )
+                print(f"Damit bist du auf Platz {getRanking(secret)}!")
+                sentry_sdk.add_breadcrumb(
+                    category="info", message=f"User is now on rank {getRanking(secret)}"
+                )
 
 
-    else:
-        sentry_sdk.add_breadcrumb(category="info", message="No secret found")
-        print("Cloud-Variable HANGMAN_SECRET nicht gefunden. Punkte werden nicht gespeichert.")
+        else:
+            sentry_sdk.add_breadcrumb(category="info", message="No secret found")
+            print("Cloud-Variable HANGMAN_SECRET nicht gefunden. Punkte werden nicht gespeichert.")
+    else: 
+        sentry_sdk.add_breadcrumb(category="info", message="Not on Windows")
+        print("Du bist nicht auf Windows. Punkte werden nicht gespeichert.")
 
 
 def main():
